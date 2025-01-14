@@ -5,7 +5,7 @@ const PORT = process.env.PORT || 3000;
 
 // Configura le credenziali API di Shopify
 const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN; // Utilizza il tuo access token di accesso
-const SHOPIFY_SHOP_URL = "https://f3ba51-0b.myshopify.com"; // Sostituisci con il tuo dominio Shopify
+const SHOPIFY_SHOP_URL = "f3ba51-0b.myshopify.com"; // Sostituisci con il tuo dominio Shopify
 
 // Middleware per ottenere il saldo della gift card tramite GraphQL
 app.get("/api/gift-card/:giftCardCode", async (req, res) => {
