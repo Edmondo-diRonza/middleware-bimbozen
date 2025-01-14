@@ -2,12 +2,12 @@ const axios = require("axios");
 
 module.exports = async (req, res) => {
   const giftCardCode = req.query.giftCardCode; // Ottieni il codice della gift card dalla query
+  const verbose = req.query.verbose === "true"; // Verifica se verbose è true nella query
   const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN; // Il tuo token di accesso Shopify
   const SHOPIFY_SHOP_URL = "f3ba51-0b.myshopify.com"; // Il dominio del tuo negozio Shopify
 
   // Log per monitorare l'input
-  const logs = [];
-  logs.push("Received gift card code: " + giftCardCode);
+  const logs = verbose ? ["Received gift card code: " + giftCardCode] : [];
 
   // Controlla se il codice gift card è presente
   if (!giftCardCode) {
@@ -20,7 +20,7 @@ module.exports = async (req, res) => {
 
   try {
     // Effettua la richiesta REST per ottenere i dettagli della gift card tramite il codice
-    logs.push("Making API request to Shopify...");
+    if (verbose) logs.push("Making API request to Shopify...");
     const response = await axios.get(
       `https://${SHOPIFY_SHOP_URL}/admin/api/2025-01/gift_cards.json?code=${giftCardCode}`,
       {
@@ -31,15 +31,16 @@ module.exports = async (req, res) => {
     );
 
     // Log della risposta
-    logs.push(
-      "Gift card response received:",
-      JSON.stringify(response.data, null, 2)
-    );
+    if (verbose)
+      logs.push(
+        "Gift card response received:",
+        JSON.stringify(response.data, null, 2)
+      );
 
     if (response.data.gift_cards && response.data.gift_cards.length > 0) {
       // Se la gift card esiste, restituisci i dettagli, l'ID e il saldo
       const giftCard = response.data.gift_cards[0];
-      logs.push("Gift card found. Returning details...");
+      if (verbose) logs.push("Gift card found. Returning details...");
       res.status(200).json({
         success: true,
         balance: giftCard.balance,
@@ -50,7 +51,7 @@ module.exports = async (req, res) => {
       });
     } else {
       // Se la gift card non esiste, restituisci un errore
-      logs.push("Gift card not found.");
+      if (verbose) logs.push("Gift card not found.");
       res.status(404).json({
         success: false,
         message: "Gift card not found",
@@ -59,7 +60,7 @@ module.exports = async (req, res) => {
     }
   } catch (error) {
     // Log dell'errore
-    logs.push("Error during API call:", error.message);
+    if (verbose) logs.push("Error during API call:", error.message);
 
     res.status(500).json({
       success: false,
