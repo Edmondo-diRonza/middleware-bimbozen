@@ -3,16 +3,22 @@ const axios = require("axios");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configura le credenziali API di Shopify
-const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN; // Utilizza il tuo access token di accesso
-const SHOPIFY_SHOP_URL = "f3ba51-0b.myshopify.com"; // Sostituisci con il tuo dominio Shopify
+// Assicurati che SHOPIFY_ACCESS_TOKEN sia settato correttamente
+const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN;
+const SHOPIFY_SHOP_URL = "f3ba51-0b.myshopify.com"; // Non includere https://
+
+// Middleware per il parsing dei JSON
+app.use(express.json());
 
 // Middleware per ottenere il saldo della gift card tramite GraphQL
 app.get("/api/gift-card/:giftCardCode", async (req, res) => {
   const giftCardCode = req.params.giftCardCode;
-  console.log(`https://${SHOPIFY_SHOP_URL}/admin/api/2025-01/graphql.json`);
 
-  // La query GraphQL per ottenere i dettagli della gift card
+  // Qui non dobbiamo includere https:// SHOPIFY_SHOP_URL è già completo
+  const endpoint = `https://${SHOPIFY_SHOP_URL}/admin/api/2025-01/graphql.json`;
+
+  console.log(`Chiamata a: ${endpoint}`);
+
   const query = `
     {
       giftCard(code: "${giftCardCode}") {
@@ -24,9 +30,8 @@ app.get("/api/gift-card/:giftCardCode", async (req, res) => {
   `;
 
   try {
-    // Fai la richiesta GraphQL a Shopify
     const response = await axios.post(
-      `https://${SHOPIFY_SHOP_URL}/admin/api/2025-01/graphql.json`,
+      endpoint,
       { query },
       {
         headers: {
@@ -36,29 +41,27 @@ app.get("/api/gift-card/:giftCardCode", async (req, res) => {
       }
     );
 
-    // Estrai i dati dalla risposta GraphQL
     const giftCard = response.data.data.giftCard;
 
     if (giftCard) {
-      // Rispondi con i dettagli della gift card
       res.json({
         success: true,
         balance: giftCard.balance,
         currency: giftCard.currency,
       });
     } else {
-      // Rispondi se la gift card non è stata trovata
       res.json({ success: false, message: "Gift card not found" });
     }
   } catch (error) {
-    console.error("Error retrieving gift card data:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Error retrieving gift card data" });
+    console.error("Error retrieving gift card data:", error.response || error);
+    res.status(500).json({
+      success: false,
+      message: "Error retrieving gift card data",
+      error: error.response ? error.response.data : error.message,
+    });
   }
 });
 
-// Avvia il server Express
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
