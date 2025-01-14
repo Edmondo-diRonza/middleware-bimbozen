@@ -37,7 +37,7 @@ module.exports = async (req, res) => {
     );
 
     if (response.data.gift_cards && response.data.gift_cards.length > 0) {
-      // Se la gift card esiste, restituisci i dettagli e il saldo
+      // Se la gift card esiste, restituisci i dettagli, l'ID e il saldo
       const giftCard = response.data.gift_cards[0];
       logs.push("Gift card found. Returning details...");
       res.status(200).json({
@@ -45,6 +45,7 @@ module.exports = async (req, res) => {
         balance: giftCard.balance,
         currency: giftCard.currency,
         giftCardCode: giftCard.code,
+        giftCardId: giftCard.id, // Aggiungi l'ID della gift card
         logs,
       });
     } else {
