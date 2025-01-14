@@ -47,6 +47,10 @@ module.exports = async (req, res) => {
         currency: giftCard.currency,
         giftCardCode: giftCard.code,
         giftCardId: giftCard.id, // Aggiungi l'ID della gift card
+        createdAt: giftCard.created_at, // Data di creazione
+        expiresOn: giftCard.expires_on, // Data di scadenza
+        initialValue: giftCard.initial_value, // Valore iniziale
+        disabledAt: giftCard.disabled_at, // Data di disabilitazione
         logs,
       });
     } else {
