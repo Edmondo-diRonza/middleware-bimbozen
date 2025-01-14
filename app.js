@@ -10,6 +10,7 @@ const SHOPIFY_SHOP_URL = "f3ba51-0b.myshopify.com"; // Sostituisci con il tuo do
 // Middleware per ottenere il saldo della gift card tramite GraphQL
 app.get("/api/gift-card/:giftCardCode", async (req, res) => {
   const giftCardCode = req.params.giftCardCode;
+  console.log(`https://${SHOPIFY_SHOP_URL}/admin/api/2025-01/graphql.json`);
 
   // La query GraphQL per ottenere i dettagli della gift card
   const query = `
