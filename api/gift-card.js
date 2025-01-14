@@ -22,7 +22,7 @@ module.exports = async (req, res) => {
     // Effettua la richiesta REST per ottenere i dettagli della gift card tramite il codice
     logs.push("Making API request to Shopify...");
     const response = await axios.get(
-      `https://${SHOPIFY_SHOP_URL}/admin/api/2023-10/gift_cards.json?code=${giftCardCode}`,
+      `https://${SHOPIFY_SHOP_URL}/admin/api/2025-01/gift_cards.json?code=${giftCardCode}`,
       {
         headers: {
           "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN,
