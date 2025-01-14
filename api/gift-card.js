@@ -1,26 +1,41 @@
 const axios = require("axios");
 
 module.exports = async (req, res) => {
-  const giftCardCode = req.query.giftCardCode; // Ottieni il giftCardCode dal parametro della query
+  const giftCardId = req.query.giftCardId; // Ottieni l'ID della gift card dal parametro della query
   const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN; // Accedi al token tramite le variabili d'ambiente
   const SHOPIFY_SHOP_URL = "f3ba51-0b.myshopify.com"; // Inserisci il tuo dominio Shopify
 
-  // La query GraphQL per ottenere i dettagli della gift card
+  // La query GraphQL per ottenere i dettagli della gift card e le transazioni
   const query = `
-    {
-      giftCard(code: "${giftCardCode}") {
-        balance
-        currency
-        code
+    query GiftCardTransactionList($id: ID!, $firstTransactions: Int) {
+      giftCard(id: $id) {
+        id
+        balance {
+          amount
+          currencyCode
+        }
+        transactions(first: $firstTransactions) {
+          nodes {
+            amount {
+              amount
+              currencyCode
+            }
+          }
+        }
       }
     }
   `;
+
+  const variables = {
+    id: giftCardId,
+    firstTransactions: 5, // Numero di transazioni da recuperare
+  };
 
   try {
     // Fai la richiesta GraphQL a Shopify
     const response = await axios.post(
       `https://${SHOPIFY_SHOP_URL}/admin/api/2025-01/graphql.json`,
-      { query },
+      { query, variables },
       {
         headers: {
           "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN,
@@ -33,12 +48,12 @@ module.exports = async (req, res) => {
     const giftCard = response.data.data.giftCard;
 
     if (giftCard) {
-      // Rispondi con i dettagli della gift card
+      // Rispondi con i dettagli della gift card e delle transazioni
       res.status(200).json({
         success: true,
         balance: giftCard.balance,
-        currency: giftCard.currency,
-        giftCardCode: giftCard.code, // Aggiunto giftCardCode per completezza
+        transactions: giftCard.transactions.nodes,
+        giftCardId: giftCard.id, // Aggiungi l'ID della gift card
       });
     } else {
       // Rispondi se la gift card non è stata trovata
