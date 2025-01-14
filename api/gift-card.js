@@ -1,29 +1,19 @@
 const axios = require("axios");
 
 module.exports = async (req, res) => {
-  // Ottieni il giftCardCode dal parametro della query
-  const giftCardCode = req.query.giftCardCode;
-  console.log("Received gift card code:", giftCardCode);
+  const giftCardCode = req.query.giftCardCode; // Il codice della gift card, alfanumerico
+  const logs = []; // Array per raccogliere i log
 
-  // Assicurati che il giftCardCode sia presente
-  if (!giftCardCode) {
-    console.error("Gift card code is missing in the request.");
-    return res.status(400).json({
-      success: false,
-      message: "Gift card code is required",
-    });
-  }
+  logs.push(`Received gift card code: ${giftCardCode}`); // Log del codice ricevuto
 
-  // Rimuovi gli spazi dal codice della gift card, se presenti
+  const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN; // Token di accesso
+  const SHOPIFY_SHOP_URL = "f3ba51-0b.myshopify.com"; // Dominio Shopify
+
+  // Pulisci il codice rimuovendo gli spazi
   const cleanedGiftCardCode = giftCardCode.replace(/\s+/g, "");
-  console.log("Cleaned gift card code:", cleanedGiftCardCode);
+  logs.push(`Cleaned gift card code: ${cleanedGiftCardCode}`); // Log del codice senza spazi
 
-  // Imposta le credenziali Shopify
-  const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN;
-  const SHOPIFY_SHOP_URL = "f3ba51-0b.myshopify.com"; // Inserisci il tuo dominio Shopify
-  console.log("Using Shopify shop URL:", SHOPIFY_SHOP_URL);
-
-  // La query GraphQL per ottenere i dettagli della gift card
+  // Query GraphQL
   const query = `
     {
       giftCard(code: "${cleanedGiftCardCode}") {
@@ -31,13 +21,12 @@ module.exports = async (req, res) => {
         currency
         code
       }
-    }
-  `;
-  console.log("GraphQL query to send to Shopify:", query);
+    }`;
+
+  logs.push("Executing GraphQL request..."); // Log prima della richiesta
 
   try {
     // Fai la richiesta GraphQL a Shopify
-    console.log("Sending request to Shopify...");
     const response = await axios.post(
       `https://${SHOPIFY_SHOP_URL}/admin/api/2025-01/graphql.json`,
       { query },
@@ -49,39 +38,41 @@ module.exports = async (req, res) => {
       }
     );
 
-    console.log("Response received from Shopify:", response.data);
+    logs.push("GraphQL response received:"); // Log della risposta
+    logs.push(JSON.stringify(response.data, null, 2)); // Log dell'intera risposta
 
-    // Estrai i dati dalla risposta GraphQL
     const giftCard = response.data.data.giftCard;
+
     if (giftCard) {
-      // Rispondi con i dettagli della gift card
-      console.log("Gift card found:", giftCard);
+      logs.push("Gift card found: " + JSON.stringify(giftCard, null, 2)); // Log se la gift card è trovata
       res.status(200).json({
         success: true,
         balance: giftCard.balance,
         currency: giftCard.currency,
-        giftCardCode: giftCard.code, // Aggiunto giftCardCode per completezza
+        giftCardCode: giftCard.code,
+        logs, // Aggiungi i log alla risposta
       });
     } else {
-      // Rispondi se la gift card non è stata trovata
-      console.error("Gift card not found in the response.");
+      logs.push("Gift card not found"); // Log se la gift card non è trovata
       res.status(404).json({
         success: false,
         message: "Gift card not found",
-        error: response.data.errors || null, // Aggiungi errori se ci sono
-        response: response.data, // Restituisci l'intero oggetto di risposta
+        error: response.data.errors || null,
+        response: response.data,
+        logs, // Aggiungi i log alla risposta
       });
     }
   } catch (error) {
-    console.error("Error retrieving gift card data:", error);
+    logs.push("Error during GraphQL request: " + error.message); // Log dell'errore
 
-    // Rispondi con il corpo dell'errore completo se disponibile
+    // Rispondi con il corpo dell'errore completo
     const errorMessage = error.response ? error.response.data : error.message;
     res.status(500).json({
       success: false,
       message: "Error retrieving gift card data",
-      error: errorMessage, // Aggiungi il messaggio di errore completo
-      response: error.response ? error.response.data : null, // Restituisci l'intero oggetto di risposta se disponibile
+      error: errorMessage,
+      response: error.response ? error.response.data : null,
+      logs, // Aggiungi i log alla risposta
     });
   }
 };
