@@ -45,7 +45,7 @@ module.exports = async (req, res) => {
       res.status(404).json({
         success: false,
         message: "Gift card not found",
-        error: response.data.errors || null, // Aggiungi errori se ci sono
+        errors: response.data.errors || null, // Aggiungi errori se ci sono
         response: response.data, // Restituisci l'intero oggetto di risposta
       });
     }
@@ -58,8 +58,7 @@ module.exports = async (req, res) => {
       success: false,
       message: "Error retrieving gift card data",
       error: errorMessage, // Aggiungi il messaggio di errore completo
-      error: response.data.errors || null, // Aggiungi errori se ci sono
-      response: response.data, // Restituisci l'intero oggetto di risposta
+      response: error.response ? error.response.data : null, // Restituisci l'intero oggetto di risposta in caso di errore
     });
   }
 };
