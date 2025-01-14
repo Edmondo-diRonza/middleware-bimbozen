@@ -38,15 +38,26 @@ module.exports = async (req, res) => {
         success: true,
         balance: giftCard.balance,
         currency: giftCard.currency,
+        giftCardCode: giftCard.code, // Aggiunto giftCardCode per completezza
       });
     } else {
       // Rispondi se la gift card non è stata trovata
-      res.status(404).json({ success: false, message: "Gift card not found" });
+      res.status(404).json({
+        success: false,
+        message: "Gift card not found",
+        error: response.data.errors || null, // Aggiungi errori se ci sono
+        response: response.data, // Restituisci l'intero oggetto di risposta
+      });
     }
   } catch (error) {
     console.error("Error retrieving gift card data:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Error retrieving gift card data" });
+
+    // Rispondi con il corpo dell'errore completo se disponibile
+    const errorMessage = error.response ? error.response.data : error.message;
+    res.status(500).json({
+      success: false,
+      message: "Error retrieving gift card data",
+      error: errorMessage, // Aggiungi il messaggio di errore completo
+    });
   }
 };
