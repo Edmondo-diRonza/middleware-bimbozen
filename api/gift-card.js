@@ -1,25 +1,31 @@
 const axios = require("axios");
 
 module.exports = async (req, res) => {
-  const giftCardCode = req.query.giftCardCode; // Il codice della gift card, alfanumerico
+  const giftCardId = req.query.giftCardId; // Usa l'ID della gift card (non il codice alfanumerico)
   const logs = []; // Array per raccogliere i log
 
-  logs.push(`Received gift card code: ${giftCardCode}`); // Log del codice ricevuto
+  logs.push(`Received gift card ID: ${giftCardId}`); // Log dell'ID ricevuto
 
   const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN; // Token di accesso
   const SHOPIFY_SHOP_URL = "f3ba51-0b.myshopify.com"; // Dominio Shopify
 
-  // Pulisci il codice rimuovendo gli spazi
-  const cleanedGiftCardCode = giftCardCode.replace(/\s+/g, "");
-  logs.push(`Cleaned gift card code: ${cleanedGiftCardCode}`); // Log del codice senza spazi
-
   // Query GraphQL
   const query = `
-    {
-      giftCard(code: "${cleanedGiftCardCode}") {
-        balance
-        currency
-        code
+    query GiftCardTransactionList($id: ID!, $firstTransactions: Int) {
+      giftCard(id: $id) {
+        id
+        balance {
+          amount
+          currencyCode
+        }
+        transactions(first: $firstTransactions) {
+          nodes {
+            amount {
+              amount
+              currencyCode
+            }
+          }
+        }
       }
     }`;
 
@@ -29,7 +35,10 @@ module.exports = async (req, res) => {
     // Fai la richiesta GraphQL a Shopify
     const response = await axios.post(
       `https://${SHOPIFY_SHOP_URL}/admin/api/2025-01/graphql.json`,
-      { query },
+      {
+        query,
+        variables: { id: giftCardId, firstTransactions: 5 }, // Passa l'ID della gift card e il numero di transazioni
+      },
       {
         headers: {
           "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN,
@@ -48,8 +57,8 @@ module.exports = async (req, res) => {
       res.status(200).json({
         success: true,
         balance: giftCard.balance,
-        currency: giftCard.currency,
-        giftCardCode: giftCard.code,
+        currency: giftCard.balance.currencyCode,
+        giftCardId: giftCard.id,
         logs, // Aggiungi i log alla risposta
       });
     } else {
