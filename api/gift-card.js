@@ -58,6 +58,8 @@ module.exports = async (req, res) => {
       success: false,
       message: "Error retrieving gift card data",
       error: errorMessage, // Aggiungi il messaggio di errore completo
+      error: response.data.errors || null, // Aggiungi errori se ci sono
+      response: response.data, // Restituisci l'intero oggetto di risposta
     });
   }
 };
