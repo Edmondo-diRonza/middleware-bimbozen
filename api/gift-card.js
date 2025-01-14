@@ -1,46 +1,43 @@
 const axios = require("axios");
 
 module.exports = async (req, res) => {
-  const giftCardCode = req.query.giftCardCode || req.body.giftCardCode; // Verifica entrambi i casi, query o body
-  const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN; // Accedi al token tramite le variabili d'ambiente
-  const SHOPIFY_SHOP_URL = "f3ba51-0b.myshopify.com"; // Inserisci il tuo dominio Shopify
+  const giftCardId = req.query.giftCardId; // Usa l'ID della gift card (non il codice alfanumerico)
+  const logs = []; // Array per raccogliere i log
 
-  console.log("Received gift card code:", giftCardCode);
+  logs.push(`Received gift card ID: ${giftCardId}`); // Log dell'ID ricevuto
 
-  // Verifica che giftCardCode non sia null o vuoto
-  if (!giftCardCode) {
-    return res.status(400).json({
-      success: false,
-      message: "giftCardCode is required and cannot be empty",
-    });
-  }
+  const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN; // Token di accesso
+  const SHOPIFY_SHOP_URL = "f3ba51-0b.myshopify.com"; // Dominio Shopify
 
-  // Rimuovi spazi extra dal giftCardCode
-  const giftCardId = giftCardCode.trim();
-
-  console.log("Processed gift card ID:", giftCardId);
-
-  // La query GraphQL per ottenere i dettagli della gift card
+  // Query GraphQL
   const query = `
-    query GiftCardQuery($id: ID!) {
+    query GiftCardTransactionList($id: ID!, $firstTransactions: Int) {
       giftCard(id: $id) {
+        id
         balance {
           amount
           currencyCode
         }
+        transactions(first: $firstTransactions) {
+          nodes {
+            amount {
+              amount
+              currencyCode
+            }
+          }
+        }
       }
-    }
-  `;
+    }`;
+
+  logs.push("Executing GraphQL request..."); // Log prima della richiesta
 
   try {
-    console.log("Executing GraphQL request...");
-
     // Fai la richiesta GraphQL a Shopify
     const response = await axios.post(
       `https://${SHOPIFY_SHOP_URL}/admin/api/2025-01/graphql.json`,
       {
         query,
-        variables: { id: giftCardId },
+        variables: { id: giftCardId, firstTransactions: 5 }, // Passa l'ID della gift card e il numero di transazioni
       },
       {
         headers: {
@@ -50,34 +47,41 @@ module.exports = async (req, res) => {
       }
     );
 
-    console.log(
-      "GraphQL response received:",
-      JSON.stringify(response.data, null, 2)
-    );
+    logs.push("GraphQL response received:"); // Log della risposta
+    logs.push(JSON.stringify(response.data, null, 2)); // Log dell'intera risposta
 
-    // Rispondi con i dati della gift card
-    res.status(200).json({
-      success: true,
-      data: response.data,
-      logs: [
-        `Successfully queried gift card with ID: ${giftCardId}`,
-        `Response: ${JSON.stringify(response.data)}`,
-      ],
-    });
+    const giftCard = response.data.data.giftCard;
+
+    if (giftCard) {
+      logs.push("Gift card found: " + JSON.stringify(giftCard, null, 2)); // Log se la gift card è trovata
+      res.status(200).json({
+        success: true,
+        balance: giftCard.balance,
+        currency: giftCard.balance.currencyCode,
+        giftCardId: giftCard.id,
+        logs, // Aggiungi i log alla risposta
+      });
+    } else {
+      logs.push("Gift card not found"); // Log se la gift card non è trovata
+      res.status(404).json({
+        success: false,
+        message: "Gift card not found",
+        error: response.data.errors || null,
+        response: response.data,
+        logs, // Aggiungi i log alla risposta
+      });
+    }
   } catch (error) {
-    console.error("Error during GraphQL request:", error);
+    logs.push("Error during GraphQL request: " + error.message); // Log dell'errore
 
-    // Gestione degli errori nel caso in cui la richiesta fallisca
+    // Rispondi con il corpo dell'errore completo
+    const errorMessage = error.response ? error.response.data : error.message;
     res.status(500).json({
       success: false,
       message: "Error retrieving gift card data",
-      error: error.response ? error.response.data : error.message,
-      logs: [
-        `Error occurred while querying gift card with ID: ${giftCardId}`,
-        `Error details: ${JSON.stringify(
-          error.response ? error.response.data : error.message
-        )}`,
-      ],
+      error: errorMessage,
+      response: error.response ? error.response.data : null,
+      logs, // Aggiungi i log alla risposta
     });
   }
 };
