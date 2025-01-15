@@ -1,6 +1,18 @@
 const axios = require("axios");
 
 module.exports = async (req, res) => {
+  // Aggiungi le intestazioni CORS
+  res.setHeader("Access-Control-Allow-Origin", "*"); // Permette a tutte le origini di accedere
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS"); // Specifica i metodi permessi
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type"); // Intestazioni permessi
+  // res.setHeader("Access-Control-Allow-Origin", "https://il-tuo-dominio.com"); da aggiungere in produzione
+
+  // Gestione delle richieste preflight
+  if (req.method === "OPTIONS") {
+    // Risponde immediatamente per le richieste preflight
+    return res.status(200).end();
+  }
+
   const giftCardCode = req.query.giftCardCode; // Ottieni il codice della gift card dalla query
   const verbose = req.query.verbose === "true"; // Verifica se verbose è true nella query
   const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN; // Il tuo token di accesso Shopify
