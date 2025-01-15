@@ -2,7 +2,7 @@ const axios = require("axios");
 
 module.exports = async (req, res) => {
   // Aggiungi le intestazioni CORS
-  res.setHeader("Access-Control-Allow-Origin", "*"); // Permette a tutte le origini di accedere
+  res.setHeader("Access-Control-Allow-Origin", "https://bimbozen.it"); // Permette a tutte le origini di accedere
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS"); // Specifica i metodi permessi
   res.setHeader("Access-Control-Allow-Headers", "Content-Type"); // Intestazioni permessi
   // res.setHeader("Access-Control-Allow-Origin", "https://il-tuo-dominio.com"); da aggiungere in produzione
